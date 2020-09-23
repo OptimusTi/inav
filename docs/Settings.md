@@ -381,6 +381,7 @@
 | osd_rssi_alarm | 20 | Value bellow which to make the OSD RSSI indicator blink |
 | osd_sidebar_horizontal_offset | 0 | Sidebar horizontal offset from default position. Positive values move the sidebars closer to the edges. |
 | osd_sidebar_scroll_arrows |  |  |
+| osd_snr_alarm | 5 | Value below which Crossfire SNR Alarm pops-up. (dB) |
 | osd_stats_energy_unit | MAH | Unit used for the drawn energy in the OSD stats [MAH/WH] (milliAmpere hour/ Watt hour) |
 | osd_temp_label_align | LEFT | Allows to chose between left and right alignment for the OSD temperature sensor labels. Valid values are `LEFT` and `RIGHT` |
 | osd_time_alarm | 10 | Value above which to make the OSD flight time indicator blink (minutes) |
