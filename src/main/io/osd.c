@@ -1694,6 +1694,9 @@ static bool osdDrawSingleElement(uint8_t item)
           buff[0] = SYM_SRN;
           tfp_sprintf(buff + 1, "%3d%c", rxLinkStatistics.uplinkSNR, SYM_DB);
         }
+        else if (rxLinkStatistics.uplinkLQ < osdConfig()->rssi_alarm) {
+            tfp_sprintf(buff + 1, "%3d%c", rxLinkStatistics.uplinkSNR, SYM_DB);
+        }
         else if (osdSNR_Alarm > osdConfig()->snr_alarm) {
             if (cmsInMenu) {
                 buff[0] = SYM_SRN;
@@ -2359,7 +2362,7 @@ static bool osdDrawSingleElement(uint8_t item)
             displayWriteChar(osdDisplayPort, elemPosX, elemPosY + 1, referenceSymbol);
             return true;
         }
-    
+
     case OSD_GVAR_0:
     {
         osdFormatGVar(buff, 0);
