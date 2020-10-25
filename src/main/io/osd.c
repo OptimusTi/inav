@@ -1655,7 +1655,7 @@ static bool osdDrawSingleElement(uint8_t item)
               buff[0] = SYM_2RSS;
               tfp_sprintf(buff + 1, "%4d%c", rxLinkStatistics.uplinkRSSI, SYM_DBM);
               if (!failsafeIsReceivingRxData()){
-                  TEXT_ATTRIBUTES_ADD_BLINK(elemAttr);
+                  tfp_sprintf(buff + 1, "%4s%c", "---", SYM_DBM);
               }
             }
             break;
@@ -1681,7 +1681,7 @@ static bool osdDrawSingleElement(uint8_t item)
             if (!failsafeIsReceivingRxData()){
                 TEXT_ATTRIBUTES_ADD_BLINK(elemAttr);
             } else if (rxLinkStatistics.uplinkLQ < osdConfig()->rssi_alarm) {
-                TEXT_ATTRIBUTES_ADD_BLINK(elemAttr);
+                tfp_sprintf(buff, "%5s", "0%");
             }
             break;
         }
@@ -1693,6 +1693,9 @@ static bool osdDrawSingleElement(uint8_t item)
         if (osdSNR_Alarm <= osdConfig()->snr_alarm) {
           buff[0] = SYM_SRN;
           tfp_sprintf(buff + 1, "%3d%c", rxLinkStatistics.uplinkSNR, SYM_DB);
+        }
+        else if (rxLinkStatistics.uplinkLQ < osdConfig()->rssi_alarm) {
+            tfp_sprintf(buff + 1, "%3d%c", rxLinkStatistics.uplinkSNR, SYM_DB);
         }
         else if (osdSNR_Alarm > osdConfig()->snr_alarm) {
             if (cmsInMenu) {
@@ -2359,7 +2362,7 @@ static bool osdDrawSingleElement(uint8_t item)
             displayWriteChar(osdDisplayPort, elemPosX, elemPosY + 1, referenceSymbol);
             return true;
         }
-    
+
     case OSD_GVAR_0:
     {
         osdFormatGVar(buff, 0);
