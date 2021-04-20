@@ -169,11 +169,11 @@ static statistic_t stats;
 
 static timeUs_t resumeRefreshAt = 0;
 static bool refreshWaitForResumeCmdRelease;
+static bool statsPagesCheck = false;
 
 static bool fullRedraw = false;
 
 static uint8_t armState;
-static uint8_t statsPagesCheck = 0;
 
 typedef struct osdMapData_s {
     uint32_t scale;
@@ -3113,7 +3113,7 @@ static void osdShowStatsPage1(void)
     const uint8_t statNameX = 1;
     const uint8_t statValuesX = 20;
     char buff[10];
-    statsPagesCheck = 1;
+    statsPagesCheck = true;
 
     displayBeginTransaction(osdDisplayPort, DISPLAY_TRANSACTION_OPT_RESET_DRAWING);
     displayClearScreen(osdDisplayPort);
@@ -3178,7 +3178,7 @@ static void osdShowStatsPage2(void)
     const uint8_t statNameX = 1;
     const uint8_t statValuesX = 20;
     char buff[10];
-    statsPagesCheck = 1;
+    statsPagesCheck = true;
 
     displayBeginTransaction(osdDisplayPort, DISPLAY_TRANSACTION_OPT_RESET_DRAWING);
     displayClearScreen(osdDisplayPort);
@@ -3374,7 +3374,7 @@ static void osdRefresh(timeUs_t currentTimeUs)
             osdResetStats();
             osdShowArmed(); // reset statistic etc
             uint32_t delay = ARMED_SCREEN_DISPLAY_TIME;
-            statsPagesCheck = 0;
+            statsPagesCheck = false;
 #if defined(USE_SAFE_HOME)
             if (safehome_distance)
                 delay *= 3;
@@ -3401,11 +3401,11 @@ static void osdRefresh(timeUs_t currentTimeUs)
             displayClearScreen(osdDisplayPort);
             resumeRefreshAt = 0;
         } else if ((currentTimeUs > resumeRefreshAt) || ((!refreshWaitForResumeCmdRelease) && STATS_PAGE1)) {
-            if (statsPagesCheck == 1) {
+            if (statsPagesCheck == true) {
                 osdShowStatsPage1();
             }
         } else if ((currentTimeUs > resumeRefreshAt) || ((!refreshWaitForResumeCmdRelease) && STATS_PAGE2)) {
-            if (statsPagesCheck == 1) {
+            if (statsPagesCheck == true) {
                 osdShowStatsPage2();
             }
         } else {
