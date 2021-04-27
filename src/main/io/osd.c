@@ -2774,7 +2774,8 @@ PG_RESET_TEMPLATE(osdConfig_t, osdConfig,
     .force_grid = SETTING_OSD_FORCE_GRID_DEFAULT,
 
     .stats_energy_unit = SETTING_OSD_STATS_ENERGY_UNIT_DEFAULT,
-    .stats_min_voltage_unit = SETTING_OSD_STATS_MIN_VOLTAGE_UNIT_DEFAULT
+    .stats_min_voltage_unit = SETTING_OSD_STATS_MIN_VOLTAGE_UNIT_DEFAULT,
+    .stats_page_time = SETTING_OSD_STATS_PAGE_TIME_DEFAULT
 );
 
 void pgResetFn_osdLayoutsConfig(osdLayoutsConfig_t *osdLayoutsConfig)
@@ -3405,7 +3406,8 @@ static void osdRefresh(timeUs_t currentTimeUs)
             if (STATS_PAGE1 || STATS_PAGE2) {
                 statsPageAutoSwapCntl = 2;
             } else {
-                if (OSD_ALTERNATING_CHOICES(2000, 2)) {
+                uint16_t pagestime = (osdConfig()->stats_page_time)*1000;
+                if (OSD_ALTERNATING_CHOICES(pagestime, 2)) {
                     if (statsPageAutoSwapCntl == 0) {
                         osdShowStatsPage1();
                         statsPageAutoSwapCntl = 1;
