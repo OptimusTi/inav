@@ -1481,6 +1481,11 @@ static bool osdDrawSingleElement(uint8_t item)
     case OSD_RSSI_VALUE:
         {
             uint16_t osdRssi = osdConvertRSSI();
+#if defined(USE_SERIALRX_CRSF)
+            if (!failsafeIsReceivingRxData()){
+                osdRssi = 0;
+            }
+#endif
             buff[0] = SYM_RSSI;
             tfp_sprintf(buff + 1, "%2d", osdRssi);
             if (osdRssi < osdConfig()->rssi_alarm) {
