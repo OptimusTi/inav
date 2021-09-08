@@ -595,6 +595,8 @@ static uint16_t osdGetCrsfLQ(void)
     int16_t displayedLQ;
     switch (osdConfig()->crsf_lq_format) {
         case OSD_CRSF_LQ_TYPE1:
+            displayedLQ = statsLQ;
+            break;
         case OSD_CRSF_LQ_TYPE2:
             displayedLQ = statsLQ;
             break;
@@ -1995,16 +1997,28 @@ static bool osdDrawSingleElement(uint8_t item)
             int16_t scaledLQ = scaleRange(constrain(statsLQ, 0, 100), 0, 100, 170, 300);
             switch (osdConfig()->crsf_lq_format) {
                 case OSD_CRSF_LQ_TYPE1:
-                    tfp_sprintf(buff+1, "%3d", rxLinkStatistics.uplinkLQ);
+                    if (!failsafeIsReceivingRxData()) {
+                        tfp_sprintf(buff+1, "%3d", 0);
+                    } else {
+                        tfp_sprintf(buff+1, "%3d", rxLinkStatistics.uplinkLQ);
+                    }
                     break;
                 case OSD_CRSF_LQ_TYPE2:
-                    tfp_sprintf(buff+1, "%d:%3d", rxLinkStatistics.rfMode, rxLinkStatistics.uplinkLQ);
+                    if (!failsafeIsReceivingRxData()) {
+                        tfp_sprintf(buff+1, "%s:%3d", " ", 0);
+                    } else {
+                        tfp_sprintf(buff+1, "%d:%3d", rxLinkStatistics.rfMode, rxLinkStatistics.uplinkLQ);
+                    }
                     break;
                 case OSD_CRSF_LQ_TYPE3:
-                    tfp_sprintf(buff+1, "%3d", rxLinkStatistics.rfMode >= 2 ? scaledLQ : rxLinkStatistics.uplinkLQ);
+                    if (!failsafeIsReceivingRxData()) {
+                        tfp_sprintf(buff+1, "%3d", 0);
+                    } else {
+                        tfp_sprintf(buff+1, "%3d", rxLinkStatistics.rfMode >= 2 ? scaledLQ : rxLinkStatistics.uplinkLQ);
+                    }
                     break;
             }
-            if (!failsafeIsReceivingRxData()){
+            if (!failsafeIsReceivingRxData()) {
                 TEXT_ATTRIBUTES_ADD_BLINK(elemAttr);
             } else if (rxLinkStatistics.uplinkLQ < osdConfig()->link_quality_alarm) {
                 TEXT_ATTRIBUTES_ADD_BLINK(elemAttr);
@@ -3470,9 +3484,12 @@ static void osdUpdateStats(void)
     if (stats.min_rssi > value)
         stats.min_rssi = value;
 
-    value = osdGetCrsfLQ();
+    value = osdGetCrsfLQ(); {
     if (stats.min_lq > value)
         stats.min_lq = value;
+    if (!failsafeIsReceivingRxData())
+        stats.min_lq = 0;
+    }
 
     value = osdGetCrsfdBm();
     if (stats.min_rssi_dbm > value)
