@@ -156,8 +156,6 @@ static float GForce, GForceAxis[XYZ_AXIS_COUNT];
 
 typedef struct statistic_s {
     uint16_t max_speed;
-    uint16_t max_3D_speed;
-    uint16_t max_air_speed;
     uint16_t min_voltage; // /100
     int16_t max_current;
     int32_t max_power;
@@ -423,7 +421,7 @@ static int32_t osdConvertVelocityToUnit(int32_t vel)
  * Converts velocity into a string based on the current unit system.
  * @param alt Raw velocity (i.e. as taken from gpsSol.groundSpeed in centimeters/seconds)
  */
-void osdFormatVelocityStr(char* buff, int32_t vel, bool _3D, bool _max)
+void osdFormatVelocityStr(char* buff, int32_t vel, bool _3D)
 {
     switch ((osd_unit_e)osdConfig()->units) {
     case OSD_UNIT_UK:
@@ -431,25 +429,13 @@ void osdFormatVelocityStr(char* buff, int32_t vel, bool _3D, bool _max)
     case OSD_UNIT_METRIC_MPH:
         FALLTHROUGH;
     case OSD_UNIT_IMPERIAL:
-        if (_max) { 
-            tfp_sprintf(buff, "%c%3d%c", SYM_MAX, (int)osdConvertVelocityToUnit(vel), (_3D ? SYM_3D_MPH : SYM_MPH));
-        } else {
-            tfp_sprintf(buff, "%3d%c", (int)osdConvertVelocityToUnit(vel), (_3D ? SYM_3D_MPH : SYM_MPH));
-        }
+        tfp_sprintf(buff, "%3d%c", (int)osdConvertVelocityToUnit(vel), (_3D ? SYM_3D_MPH : SYM_MPH));
         break;
     case OSD_UNIT_METRIC:
-        if (_max) { 
-            tfp_sprintf(buff, "%c%3d%c", SYM_MAX, (int)osdConvertVelocityToUnit(vel), (_3D ? SYM_3D_KMH : SYM_KMH));
-        } else {
-            tfp_sprintf(buff, "%3d%c", (int)osdConvertVelocityToUnit(vel), (_3D ? SYM_3D_KMH : SYM_KMH));
-        }
+        tfp_sprintf(buff, "%3d%c", (int)osdConvertVelocityToUnit(vel), (_3D ? SYM_3D_KMH : SYM_KMH));
         break;
     case OSD_UNIT_GA:
-        if (_max) { 
-            tfp_sprintf(buff, "%c%3d%c", SYM_MAX, (int)osdConvertVelocityToUnit(vel), (_3D ? SYM_3D_KT : SYM_KT));
-        } else {
-            tfp_sprintf(buff, "%3d%c", (int)osdConvertVelocityToUnit(vel), (_3D ? SYM_3D_KT : SYM_KT));
-        }
+        tfp_sprintf(buff, "%3d%c", (int)osdConvertVelocityToUnit(vel), (_3D ? SYM_3D_KT : SYM_KT));
         break;
     }
 }
@@ -1585,20 +1571,14 @@ static bool osdDrawSingleElement(uint8_t item)
         break;
 
     case OSD_GPS_SPEED:
-        osdFormatVelocityStr(buff, gpsSol.groundSpeed, false, false);
-        break;
-
-    case OSD_GPS_MAX_SPEED:
-        osdFormatVelocityStr(buff, stats.max_speed, false, true);
+        osdFormatVelocityStr(buff, gpsSol.groundSpeed, false);
         break;
 
     case OSD_3D_SPEED:
-        osdFormatVelocityStr(buff, osdGet3DSpeed(), true, false);
-        break;
-    
-    case OSD_3D_MAX_SPEED:
-        osdFormatVelocityStr(buff, stats.max_3D_speed, true, true);
-        break;
+        {
+            osdFormatVelocityStr(buff, osdGet3DSpeed(), true);
+            break;
+        }
 
     case OSD_GLIDESLOPE:
         {
@@ -2440,19 +2420,7 @@ static bool osdDrawSingleElement(uint8_t item)
         {
         #ifdef USE_PITOT
             buff[0] = SYM_AIR;
-            osdFormatVelocityStr(buff + 1, pitot.airSpeed, false, false);
-        #else
-            return false;
-        #endif
-            break;
-        }
-
-    case OSD_AIR_MAX_SPEED:
-        {
-        #ifdef USE_PITOT
-            buff[0] = SYM_MAX;
-            buff[1] = SYM_AIR;
-            osdFormatVelocityStr(buff + 2, stats.max_air_speed, false, false);
+            osdFormatVelocityStr(buff + 1, pitot.airSpeed, false);
         #else
             return false;
         #endif
@@ -3480,8 +3448,6 @@ static void osdResetStats(void)
     stats.max_current = 0;
     stats.max_power = 0;
     stats.max_speed = 0;
-    stats.max_3D_speed = 0;
-    stats.max_air_speed = 0;
     stats.min_voltage = 5000;
     stats.min_rssi = 99;
     stats.min_lq = 300;
@@ -3495,14 +3461,8 @@ static void osdUpdateStats(void)
 
     if (feature(FEATURE_GPS)) {
         value = osdGet3DSpeed();
-        if (stats.max_3D_speed < value)
-            stats.max_3D_speed = value;
-
-        if (stats.max_speed < gpsSol.groundSpeed)
-            stats.max_speed = gpsSol.groundSpeed;
-
-        if (stats.max_air_speed < pitot.airSpeed)
-            stats.max_air_speed = pitot.airSpeed;
+        if (stats.max_speed < value)
+            stats.max_speed = value;
 
         if (stats.max_distance < GPS_distanceToHome)
             stats.max_distance = GPS_distanceToHome;
@@ -3554,7 +3514,7 @@ static void osdShowStatsPage1(void)
 
     if (feature(FEATURE_GPS)) {
         displayWrite(osdDisplayPort, statNameX, top, "MAX SPEED        :");
-        osdFormatVelocityStr(buff, stats.max_3D_speed, true, false);
+        osdFormatVelocityStr(buff, stats.max_speed, true);
         osdLeftAlignString(buff);
         displayWrite(osdDisplayPort, statValuesX, top++, buff);
 
@@ -4090,60 +4050,82 @@ textAttributes_t osdGetSystemMessage(char *buff, size_t buff_size, bool isCenter
             // messages to show.
             const char *messages[5];
             unsigned messageCount = 0;
-            const char *failsafeInfoMessage = NULL;
+            if (FLIGHT_MODE(FAILSAFE_MODE)) {
+                // In FS mode while being armed too
+                const char *failsafePhaseMessage = osdFailsafePhaseMessage();
+                const char *failsafeInfoMessage = osdFailsafeInfoMessage();
+                const char *navStateFSMessage = navigationStateMessage();
 
-            if (FLIGHT_MODE(FAILSAFE_MODE) || FLIGHT_MODE(NAV_RTH_MODE) || FLIGHT_MODE(NAV_WP_MODE) || navigationIsExecutingAnEmergencyLanding()) {
-                if (isWaypointMissionRTHActive()) {
-                    // if RTH activated whilst WP mode selected, remind pilot to cancel WP mode to exit RTH
-                    messages[messageCount++] = OSD_MESSAGE_STR(OSD_MSG_WP_RTH_CANCEL);
+                if (failsafePhaseMessage) {
+                    messages[messageCount++] = failsafePhaseMessage;
                 }
-                if (navGetCurrentStateFlags() & NAV_AUTO_WP_DONE) {
-                    messages[messageCount++] = OSD_MESSAGE_STR(OSD_MSG_WP_FINISHED);
-                } else if (NAV_Status.state == MW_NAV_STATE_WP_ENROUTE) {
-                    // Countdown display for remaining Waypoints
-                    char buf[6];
-                    osdFormatDistanceSymbol(buf, posControl.wpDistance, 0);
-                    tfp_sprintf(messageBuf, "TO WP %u/%u (%s)", getGeoWaypointNumber(posControl.activeWaypointIndex), posControl.geoWaypointCount, buf);
-                    messages[messageCount++] = messageBuf;
-                } else if (NAV_Status.state == MW_NAV_STATE_HOLD_TIMED) {
-                    // WP hold time countdown in seconds
-                    timeMs_t currentTime = millis();
-                    int holdTimeRemaining = posControl.waypointList[posControl.activeWaypointIndex].p1 - (int)((currentTime - posControl.wpReachedTime)/1000);
-                    if (holdTimeRemaining >=0) {
-                        tfp_sprintf(messageBuf, "HOLDING WP FOR %2u S", holdTimeRemaining);
-                    }
-                    messages[messageCount++] = messageBuf;
-                } else {
-                    const char *navStateMessage = navigationStateMessage();
-                    if (navStateMessage) {
-                        messages[messageCount++] = navStateMessage;
-                    }
+                if (failsafeInfoMessage) {
+                    messages[messageCount++] = failsafeInfoMessage;
+                }
+                if (navStateFSMessage) {
+                    messages[messageCount++] = navStateFSMessage;
                 }
 #if defined(USE_SAFE_HOME)
                 const char *safehomeMessage = divertingToSafehomeMessage();
-                if (safehomeMessage) {
-                    messages[messageCount++] = safehomeMessage;
-                }
+				if (safehomeMessage) {
+					messages[messageCount++] = safehomeMessage;
+				}
 #endif
-                if (FLIGHT_MODE(FAILSAFE_MODE)) {
-                    // In FS mode while being armed too
-                    const char *failsafePhaseMessage = osdFailsafePhaseMessage();
-                    failsafeInfoMessage = osdFailsafeInfoMessage();
-
-                    if (failsafePhaseMessage) {
-                        messages[messageCount++] = failsafePhaseMessage;
+                if (messageCount > 0) {
+                    message = messages[OSD_ALTERNATING_CHOICES(1000, messageCount)];
+                    if (message == failsafeInfoMessage) {
+                        // failsafeInfoMessage is not useful for recovering
+                        // a lost model, but might help avoiding a crash.
+                        // Blink to grab user attention.
+                        TEXT_ATTRIBUTES_ADD_BLINK(elemAttr);
                     }
-                    if (failsafeInfoMessage) {
-                        messages[messageCount++] = failsafeInfoMessage;
-                    }
+                    // We're shoing either failsafePhaseMessage or
+                    // navStateFSMessage. Don't BLINK here since
+                    // having this text available might be crucial
+                    // during a lost aircraft recovery and blinking
+                    // will cause it to be missing from some frames.
                 }
-            } else {    /* messages shown only when Failsafe, WP, RTH or Emergency Landing not active */
-                if (STATE(FIXED_WING_LEGACY) && (navGetCurrentStateFlags() & NAV_CTL_LAUNCH)) {
-                    messages[messageCount++] = OSD_MESSAGE_STR(OSD_MSG_AUTOLAUNCH);
-                    const char *launchStateMessage = fixedWingLaunchStateMessage();
-                    if (launchStateMessage) {
-                        messages[messageCount++] = launchStateMessage;
+            } else {
+                if (FLIGHT_MODE(NAV_RTH_MODE) || FLIGHT_MODE(NAV_WP_MODE) || navigationIsExecutingAnEmergencyLanding()) {
+                    if (isWaypointMissionRTHActive()) {
+                        // if RTH activated whilst WP mode selected, remind pilot to cancel WP mode to exit RTH
+                        messages[messageCount++] = OSD_MESSAGE_STR(OSD_MSG_WP_RTH_CANCEL);
                     }
+
+                    if (navGetCurrentStateFlags() & NAV_AUTO_WP_DONE) {
+                        messages[messageCount++] = OSD_MESSAGE_STR(OSD_MSG_WP_FINISHED);
+                    } else if (NAV_Status.state == MW_NAV_STATE_WP_ENROUTE) {
+                        // Countdown display for remaining Waypoints
+                        char buf[6];
+                        osdFormatDistanceSymbol(buf, posControl.wpDistance, 0);
+                        tfp_sprintf(messageBuf, "TO WP %u/%u (%s)", getGeoWaypointNumber(posControl.activeWaypointIndex), posControl.geoWaypointCount, buf);
+                        messages[messageCount++] = messageBuf;
+                    } else if (NAV_Status.state == MW_NAV_STATE_HOLD_TIMED) {
+                        // WP hold time countdown in seconds
+                        timeMs_t currentTime = millis();
+                        int holdTimeRemaining = posControl.waypointList[posControl.activeWaypointIndex].p1 - (int)((currentTime - posControl.wpReachedTime)/1000);
+                        if (holdTimeRemaining >=0) {
+                            tfp_sprintf(messageBuf, "HOLDING WP FOR %2u S", holdTimeRemaining);
+                            messages[messageCount++] = messageBuf;
+                        }
+                    } else {
+                        const char *navStateMessage = navigationStateMessage();
+                        if (navStateMessage) {
+                            messages[messageCount++] = navStateMessage;
+                        }
+                    }
+#if defined(USE_SAFE_HOME)
+					const char *safehomeMessage = divertingToSafehomeMessage();
+					if (safehomeMessage) {
+						messages[messageCount++] = safehomeMessage;
+					}
+#endif
+                } else if (STATE(FIXED_WING_LEGACY) && (navGetCurrentStateFlags() & NAV_CTL_LAUNCH)) {
+                        messages[messageCount++] = OSD_MESSAGE_STR(OSD_MSG_AUTOLAUNCH);
+                        const char *launchStateMessage = fixedWingLaunchStateMessage();
+                        if (launchStateMessage) {
+                            messages[messageCount++] = launchStateMessage;
+                        }
                 } else {
                     if (FLIGHT_MODE(NAV_ALTHOLD_MODE) && !navigationRequiresAngleMode()) {
                         // ALTHOLD might be enabled alongside ANGLE/HORIZON/ACRO
@@ -4165,20 +4147,11 @@ textAttributes_t osdGetSystemMessage(char *buff, size_t buff_size, bool isCenter
                         messages[messageCount++] = OSD_MESSAGE_STR(OSD_MSG_HEADFREE);
                     }
                 }
-            }
-            if (messageCount > 0) {
-                message = messages[OSD_ALTERNATING_CHOICES(1000, messageCount)];
-                if (message == failsafeInfoMessage) {
-                    // failsafeInfoMessage is not useful for recovering
-                    // a lost model, but might help avoiding a crash.
-                    // Blink to grab user attention.
-                    TEXT_ATTRIBUTES_ADD_BLINK(elemAttr);
+                // Pick one of the available messages. Each message lasts
+                // a second.
+                if (messageCount > 0) {
+                    message = messages[OSD_ALTERNATING_CHOICES(1000, messageCount)];
                 }
-                // We're shoing either failsafePhaseMessage or
-                // navStateMessage. Don't BLINK here since
-                // having this text available might be crucial
-                // during a lost aircraft recovery and blinking
-                // will cause it to be missing from some frames.
             }
         } else if (ARMING_FLAG(ARMING_DISABLED_ALL_FLAGS)) {
             unsigned invalidIndex;
