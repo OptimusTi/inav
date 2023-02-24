@@ -178,6 +178,11 @@ float constrainf(float amt, float low, float high)
         return amt;
 }
 
+int32_t hyst(int32_t oldval, int32_t newval, int32_t hysteresis)
+{
+    return (oldval < newval - hysteresis && oldval > newval + hysteresis) ? oldval : newval;
+}
+
 void devClear(stdev_t *dev)
 {
     dev->m_n = 0;

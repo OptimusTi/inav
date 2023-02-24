@@ -149,6 +149,8 @@ int32_t applyDeadbandRescaled(int32_t value, int32_t deadband, int32_t min, int3
 int32_t constrain(int32_t amt, int32_t low, int32_t high);
 float constrainf(float amt, float low, float high);
 
+int32_t hyst(int32_t oldval, int32_t newval, int32_t hysteresis);
+
 void devClear(stdev_t *dev);
 void devPush(stdev_t *dev, float x);
 float devVariance(stdev_t *dev);
