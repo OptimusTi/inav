@@ -2492,7 +2492,7 @@ static bool osdDrawSingleElement(uint8_t item)
                 }
             } else if (osdSNR_Alarm <= osdConfig()->snr_alarm) {
                 buff[0] = SYM_SNR;
-                tpf_printf(buff + 1, "%3d%c"), rxLinkStatistics.uplinkSNR, SYM_DB);
+                tfp_printf(buff + 1, "%3d%c", rxLinkStatistics.uplinkSNR, SYM_DB);
             }
             break;
         }
