@@ -22,23 +22,21 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-#pragma once
+#include <stdbool.h>
+#include <stdint.h>
 
-#include "config/parameter_group.h"
+#include "platform.h"
 
-typedef struct ezTuneSettings_s {
-    uint8_t enabled;
-    uint16_t filterHz;
-    uint8_t axisRatio;
-    uint8_t response;
-    uint8_t damping;
-    uint8_t stability;
-    uint8_t aggressiveness;
-    uint8_t rate;
-    uint8_t expo;
-    uint8_t snappiness;
-} ezTuneSettings_t;
+#include "fc/fc_msp_box.h"
+#include "fc/config.h"
+#include "io/serial.h"
+#include "io/piniobox.h"
 
-PG_DECLARE_PROFILE(ezTuneSettings_t, ezTune);
-
-void ezTuneUpdate(void);
+void targetConfiguration(void)
+{
+    serialConfigMutable()->portConfigs[findSerialPortIndexByIdentifier(SERIAL_PORT_USART1)].functionMask = FUNCTION_RX_SERIAL;
+    serialConfigMutable()->portConfigs[findSerialPortIndexByIdentifier(SERIAL_PORT_USART3)].functionMask = FUNCTION_GPS;
+    serialConfigMutable()->portConfigs[findSerialPortIndexByIdentifier(SERIAL_PORT_USART6)].functionMask = FUNCTION_MSP;
+	
+    pinioBoxConfigMutable()->permanentId[0] = BOX_PERMANENT_ID_USER1;
+}
