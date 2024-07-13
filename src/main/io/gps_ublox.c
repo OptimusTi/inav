@@ -931,6 +931,14 @@ STATIC_PROTOTHREAD(gpsConfigure)
                 dynmodelCfg[0].value = UBX_DYNMODEL_AIR_4G;
                 ubloxSendSetCfgBytes(dynmodelCfg, 2);
                 break;
+            case GPS_DYNMODEL_SEA:
+                dynmodelCfg[0].value = UBX_DYNMODEL_SEA;
+                ubloxSendSetCfgBytes(dynmodelCfg, 2);
+                break;
+            case GPS_DYNMODEL_MOWER:
+                dynmodelCfg[0].value = UBX_DYNMODEL_MOWER;
+                ubloxSendSetCfgBytes(dynmodelCfg, 2);
+                break;
         }
         ptWait(_ack_state == UBX_ACK_GOT_ACK);
     } else {
@@ -950,6 +958,12 @@ STATIC_PROTOTHREAD(gpsConfigure)
                 break;
             case GPS_DYNMODEL_AIR_4G:
                 configureNAV5(UBX_DYNMODEL_AIR_4G, UBX_FIXMODE_AUTO);
+                break;
+            case GPS_DYNMODEL_SEA:
+                configureNAV5(UBX_DYNMODEL_SEA, UBX_FIXMODE_AUTO);
+                break;
+            case GPS_DYNMODEL_MOWER:
+                configureNAV5(UBX_DYNMODEL_MOWER, UBX_FIXMODE_AUTO);
                 break;
         }
         ptWait(_ack_state == UBX_ACK_GOT_ACK);
@@ -1210,7 +1224,7 @@ STATIC_PROTOTHREAD(gpsProtocolStateThread)
         ptSemaphoreWait(semNewDataReady);
         gpsProcessNewSolutionData(false);
 
-        if ((gpsState.gpsConfig->autoConfig) && (gpsState.gpsConfig->provider == GPS_UBLOX || gpsState.gpsConfig->provider == GPS_UBLOX7PLUS)) {
+        if (gpsState.gpsConfig->autoConfig) {
             if ((millis() - gpsState.lastCapaPoolMs) > GPS_CAPA_INTERVAL) {
                 gpsState.lastCapaPoolMs = millis();
 
@@ -1257,7 +1271,7 @@ void gpsHandleUBLOX(void)
 
 bool isGpsUblox(void)
 {
-    if(gpsState.gpsPort != NULL && (gpsState.gpsConfig->provider == GPS_UBLOX || gpsState.gpsConfig->provider == GPS_UBLOX7PLUS)) {
+    if(gpsState.gpsPort != NULL && (gpsState.gpsConfig->provider == GPS_UBLOX)) {
         return true;
     }
 
